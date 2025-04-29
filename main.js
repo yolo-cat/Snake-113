@@ -1,181 +1,174 @@
-const GRID_SIZE = 30;
-const board = document.getElementById('gameBoard');
-let snake, direction, nextDirection, food, score, speed, gameInterval, isRunning;
+// 遊戲狀態變數
+let snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }];
+let food = { x: 10, y: 10 };
+let direction = { x: 1, y: 0 };
+let nextDirection = { x: 1, y: 0 };
+let score = 0;
+let speed = 200;
+let gameInterval = null;
+let isRunning = false;
+const GRID_SIZE = 20;
 
-// ------------------------------
-// Utility Functions
-// ------------------------------
-
-// 隨機生成食物位置
-function randomFood() {
-  return {
-    x: Math.floor(Math.random() * GRID_SIZE),
-    y: Math.floor(Math.random() * GRID_SIZE),
-  };
-}
-
-// 處理邊緣傳送
-function wrapPosition({ x, y }) {
-  if (x < 0) x = GRID_SIZE - 1;
-  if (x >= GRID_SIZE) x = 0;
-  if (y < 0) y = GRID_SIZE - 1;
-  if (y >= GRID_SIZE) y = 0;
-  return { x, y };
-}
-
-// 檢查是否碰到自己
-function isCollision({ x, y }) {
-  return snake.some(seg => seg.x === x && seg.y === y);
-}
-
-// 計算新蛇頭位置
-function moveSnake() {
-  direction = { ...nextDirection };
-  const head = snake[0];
-  return wrapPosition({ x: head.x + direction.x, y: head.y + direction.y });
-}
-
-// ------------------------------
-// Game Mechanics
-// ------------------------------
-
-// 初始化棋盤
+// 初始化遊戲棋盤
 function initBoard() {
-  board.innerHTML = '';
-  for (let y = 0; y < GRID_SIZE; y++) {
-    for (let x = 0; x < GRID_SIZE; x++) {
-      const cell = document.createElement('div');
-      cell.classList.add('cell');
-      cell.dataset.x = x;
-      cell.dataset.y = y;
-      board.appendChild(cell);
+    const gameBoard = document.getElementById('gameBoard');
+    gameBoard.innerHTML = '';
+    gameBoard.style.gridTemplateRows = `repeat(${GRID_SIZE}, 1fr)`;
+    gameBoard.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
+    for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.dataset.x = x;
+            cell.dataset.y = y;
+            gameBoard.appendChild(cell);
+        }
     }
-  }
 }
 
-// 處理吃食物邏輯，回傳是否吃到
-function handleFood(head) {
-  if (head.x === food.x && head.y === food.y) {
-    score++;
-    document.getElementById('score').textContent = `Score: ${score}`;
-    food = randomFood();
-    speed = Math.max(10, speed - 2);
-    clearInterval(gameInterval);
-    gameInterval = setInterval(gameLoop, speed);
-    return true;
-  }
-  return false;
-}
-
-// ------------------------------
-// Update & Draw
-// ------------------------------
-
-// update
-function update() {
-  const newHead = moveSnake();
-  if (isCollision(newHead)) {
-    clearInterval(gameInterval);
-    isRunning = false;
-    alert('Game Over');
-    return;
-  }
-  snake.unshift(newHead);
-  if (!handleFood(newHead)) snake.pop();
-}
-
-// 依座標取得格子
-function getCell(x, y) {
-  return document.querySelector(`.cell[data-x="${x}"][data-y="${y}"]`);
-}
-
-// 清空畫面上的蛇與食物
-function clearBoard() {
-  document.querySelectorAll('.cell').forEach(c => c.classList.remove('snake', 'food'));
-}
-
-// 繪製食物
-function drawFood() {
-  const cell = getCell(food.x, food.y);
-  if (cell) {
-    cell.classList.add('food');
-  }
-}
-
-// 繪製蛇身
-function drawSnake() {
-  for (const segment of snake) {
-    const cell = getCell(segment.x, segment.y);
-    if (cell) {
-      cell.classList.add('snake');
-    }
-  }
-}
-
-// draw
+// 繪製遊戲畫面
 function draw() {
-  clearBoard();
-  drawFood();
-  drawSnake();
+    clearBoard();
+    drawFood();
+    drawSnake();
 }
 
-// ------------------------------
-// Control Loop
-// ------------------------------
+function clearBoard() {
+    document.querySelectorAll('.cell').forEach(cell => {
+        cell.classList.remove('snake', 'food');
+    });
+}
+
+function drawFood() {
+    const cell = getCell(food.x, food.y);
+    if (cell) cell.classList.add('food');
+}
+
+function drawSnake() {
+    snake.forEach(segment => {
+        const cell = getCell(segment.x, segment.y);
+        if (cell) cell.classList.add('snake');
+    });
+}
+
+function getCell(x, y) {
+    return document.querySelector(`.cell[data-x="${x}"][data-y="${y}"]`);
+}
+
+// 處理鍵盤輸入
+function handleKey(event) {
+    const keyMap = {
+        ArrowUp: { x: 0, y: -1 },
+        ArrowDown: { x: 0, y: 1 },
+        ArrowLeft: { x: -1, y: 0 },
+        ArrowRight: { x: 1, y: 0 },
+    };
+    const newDirection = keyMap[event.key];
+    if (newDirection && (newDirection.x !== -direction.x || newDirection.y !== -direction.y)) {
+        nextDirection = newDirection;
+    }
+}
 
 // 遊戲主迴圈
 function gameLoop() {
-  if (!isRunning) return;
-  update();
-  draw();
+    update();
+    draw();
 }
 
-// 開始遊戲
-function startGame() {
-  clearInterval(gameInterval);
-  initBoard();
-  snake = [{ x: 2, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 0 }];
-  direction = { x: 1, y: 0 };
-  nextDirection = { ...direction };
-  food = randomFood();
-  score = 0;
-  speed = 200;
-  isRunning = true;
-  document.getElementById('score').textContent = `Score: ${score}`;
-  gameInterval = setInterval(gameLoop, speed);
+function update() {
+    moveSnake();
+    if (isCollision(snake[0])) {
+        endGame();
+        return;
+    }
+    if (!handleFood(snake[0])) {
+        snake.pop();
+    }
 }
 
-// 暫停 / 繼續
-function togglePause() {
-  if (!isRunning) return;
-  if (gameInterval) {
+function moveSnake() {
+    direction = nextDirection;
+    const newHead = {
+        x: snake[0].x + direction.x,
+        y: snake[0].y + direction.y,
+    };
+    snake.unshift(newHead);
+}
+
+function isCollision(head) {
+    // 檢查是否撞到自己
+    const hitSelf = snake.slice(1).some(segment => segment.x === head.x && segment.y === head.y);
+    // 檢查是否碰到邊界
+    const hitWall = head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE;
+    return hitSelf || hitWall;
+}
+
+function handleFood(head) {
+    if (head.x === food.x && head.y === food.y) {
+        score++;
+        updateScore();
+        randomFood();
+        increaseSpeed();
+        return true;
+    }
+    return false;
+}
+
+function randomFood() {
+    let newFood;
+    do {
+        newFood = {
+            x: Math.floor(Math.random() * GRID_SIZE),
+            y: Math.floor(Math.random() * GRID_SIZE),
+        };
+    } while (snake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
+    food = newFood;
+}
+
+function increaseSpeed() {
+    speed = Math.max(50, speed - 10);
     clearInterval(gameInterval);
-    gameInterval = null;
-  } else {
     gameInterval = setInterval(gameLoop, speed);
-  }
 }
 
-// 鍵盤控制
-function handleKey(e) {
-  const dirs = {
-    ArrowUp:    { x: 0, y: -1 },
-    ArrowDown:  { x: 0, y: 1 },
-    ArrowLeft:  { x: -1, y: 0 },
-    ArrowRight: { x: 1, y: 0 },
-  };
-  const newDir = dirs[e.code];
-  if (newDir && (newDir.x + direction.x !== 0 || newDir.y + direction.y !== 0)) {
-    nextDirection = newDir;
-  }
+function updateScore() {
+    document.getElementById('score').textContent = `Score: ${score}`;
 }
 
-// ------------------------------
-// UI Binding & Init
-// ------------------------------
+// 遊戲控制
+function startGame() {
+    clearInterval(gameInterval);
+    initBoard();
+    snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }];
+    food = { x: 10, y: 10 };
+    direction = { x: 1, y: 0 };
+    nextDirection = { x: 1, y: 0 };
+    score = 0;
+    speed = 200;
+    isRunning = true;
+    updateScore();
+    randomFood();
+    gameInterval = setInterval(gameLoop, speed);
+}
 
+function endGame() {
+    clearInterval(gameInterval);
+    isRunning = false;
+    alert('Game Over');
+}
+
+function togglePause() {
+    if (!isRunning) return;
+    if (gameInterval) {
+        clearInterval(gameInterval);
+        gameInterval = null;
+    } else {
+        gameInterval = setInterval(gameLoop, speed);
+    }
+}
+
+// 事件監聽
 document.getElementById('startBtn').addEventListener('click', startGame);
 document.getElementById('pauseBtn').addEventListener('click', togglePause);
-window.addEventListener('keydown', handleKey);
+document.addEventListener('keydown', handleKey);
 
-initBoard();

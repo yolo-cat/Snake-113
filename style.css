@@ -5,6 +5,7 @@
   --accent: red;
   --cell-border: #222;
   --btn-border: #fff;
+  --grid-size: 20; /* 定義預設網格大小 */
 }
 
 body {
@@ -47,11 +48,12 @@ body {
 }
 
 #gameBoard {
-  width: 600px;
-  height: 600px;
+  width: 90vmin; /* 使用 vmin 實現響應式寬度 */
+  height: 90vmin; /* 使用 vmin 實現響應式高度，保持正方形 */
   display: grid;
-  grid-template-columns: repeat(30, 1fr);
-  grid-template-rows: repeat(30, 1fr);
+  /* 使用 CSS 變數設定網格欄和列 */
+  grid-template-columns: repeat(var(--grid-size), 1fr);
+  grid-template-rows: repeat(var(--grid-size), 1fr);
   border: 2px solid var(--primary);
   background: var(--board-bg);
   gap: 1px;
